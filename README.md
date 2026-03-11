@@ -1,236 +1,255 @@
-# Prueba Técnica – Arquitectura de Microservicios (Products & Inventory)
+Prueba Técnica Full Stack
 
-Este proyecto implementa una arquitectura de microservicios utilizando **Spring Boot**, donde se gestionan productos y su inventario de manera desacoplada.
+Java Spring Boot + Vue + Docker
 
-El objetivo es demostrar buenas prácticas en el desarrollo backend incluyendo:
+Descripción
 
-- Arquitectura de microservicios
-- Comunicación entre servicios
-- Manejo de concurrencia
-- Operaciones idempotentes
-- Resiliencia ante fallos
-- Observabilidad (logs y correlation-id)
-- Health checks con Actuator
+Este proyecto corresponde a una prueba técnica Full Stack basada en una arquitectura de microservicios utilizando Java Spring Boot para el backend y Vue 3 para el frontend.
 
----
+El sistema permite gestionar un catálogo de productos y su inventario, incluyendo funcionalidades como:
 
-# Arquitectura del sistema
+Autenticación mediante JWT
 
-El sistema está compuesto por dos microservicios:
+Consulta de productos con búsqueda, filtros y paginación
 
-| Servicio | Puerto | Responsabilidad |
-|--------|--------|----------------|
-| products-service | 8081 | Gestión del catálogo de productos |
-| inventory-service | 8082 | Gestión de inventario y compras |
+Consulta de inventario por producto
 
-Flujo principal del sistema:
+Compra de productos
 
-Cliente
-↓
-inventory-service
-↓
-products-service
-↓
+Comunicación segura entre microservicios mediante API Key
+
+Manejo de idempotencia en operaciones de compra
+
+Resiliencia en llamadas entre servicios mediante Resilience4j
+
+El sistema está completamente dockerizado, permitiendo levantar toda la aplicación con Docker Compose.
+
+Arquitectura
+
+El sistema está compuesto por los siguientes servicios:
+
+Frontend (Vue)
+       |
+       v
+Products Service (Spring Boot)
+       |
+       v
+Inventory Service (Spring Boot)
+
+Cada microservicio utiliza su propia base de datos PostgreSQL.
+
+Servicios incluidos
+Servicio	Descripción
+products-service	Gestión de productos y autenticación
+inventory-service	Gestión de inventario y compras
+frontend	Aplicación web desarrollada con Vue
+products-db	Base de datos PostgreSQL para productos
+inventory-db	Base de datos PostgreSQL para inventario
+Tecnologías utilizadas
+Backend
+
+Java 17
+
+Spring Boot
+
+Spring Data JPA
+
+Hibernate
+
 PostgreSQL
 
-El **inventory-service** valida la existencia de un producto consultando el **products-service** antes de procesar operaciones de inventario.
+Resilience4j
 
----
+JWT (JSON Web Token)
 
-# Tecnologías utilizadas
+Frontend
 
-- Java 17
-- Spring Boot
-- Spring Data JPA
-- PostgreSQL
-- Maven
-- Resilience4j
-- Spring Actuator
-- Docker
+Vue 3
 
----
+Vite
 
-# Características implementadas
+Axios
 
-## Comunicación entre microservicios
+CSS
 
-El servicio de inventario se comunica con el servicio de productos para validar la existencia de un producto antes de registrar inventario o procesar compras.
+Infraestructura
 
-Esto evita inconsistencias entre servicios.
+Docker
 
----
+Docker Compose
 
-## Manejo de concurrencia en compras
+Funcionalidades implementadas
+Autenticación
 
-El endpoint de compra utiliza bloqueo a nivel de base de datos para evitar condiciones de carrera que puedan generar inventario negativo.
+Login mediante JWT
 
-Esto garantiza que múltiples solicitudes concurrentes no puedan consumir más inventario del disponible.
+Protección de rutas en el frontend
 
----
+Interceptor de Axios para enviar el token automáticamente
 
-## Operaciones idempotentes
+Productos
 
-El endpoint de compra soporta el header:
-Idempotency-Key
+Listado de productos
 
-Esto permite evitar compras duplicadas cuando un cliente repite accidentalmente una solicitud.
+Búsqueda por nombre o SKU
 
-Ejemplo:
-	POST /inventory/purchase
-	Idempotency-Key: compra-001
+Filtro por estado
 
-Si la misma clave se vuelve a enviar, el sistema retorna la misma respuesta sin volver a procesar la operación.
+Paginación
 
----
+Inventario
 
-## Resiliencia ante fallos
+Consulta de inventario por producto
 
-Se utiliza **Resilience4j** para manejar fallos en la comunicación entre microservicios.
+Registro de inventario
 
-Estrategias aplicadas:
+Compras
 
-- Retry
-- Timeout
-- Circuit Breaker
+Compra de productos
 
-Si el servicio de productos no está disponible, el sistema responde con: 503 Service Unavailable
+Validación de stock disponible
 
----
+Manejo de idempotencia
 
-## Observabilidad
+Comunicación entre microservicios
 
-Se implementa un **Correlation ID** para rastrear solicitudes entre microservicios.
+Uso de API Key
 
-Header utilizado: X-Correlation-Id
+Manejo de errores entre servicios
 
-Si el cliente no lo envía, el sistema genera uno automáticamente.
+Resiliencia
 
-Esto permite seguir el flujo completo de una petición en los logs.
+Retry
 
-Ejemplo de log: 2026-03-11 INFO [c1b2a3d4] InventoryService - Processing purchase for productId=...
+Timeout
 
----
+Circuit Breaker con Resilience4j
 
-## Health checks
+Observabilidad
 
-Se utilizan endpoints de **Spring Actuator** para monitorear el estado del sistema.
+Endpoints disponibles:
 
-### Products Service
+/actuator/health
+/actuator/info
+/actuator/metrics
+Estructura del proyecto
+linktic-microservices-test
+│
+├── products
+│   ├── src
+│   ├── Dockerfile
+│   └── pom.xml
+│
+├── inventory
+│   ├── src
+│   ├── Dockerfile
+│   └── pom.xml
+│
+├── frontend
+│   ├── src
+│   ├── Dockerfile
+│   └── package.json
+│
+└── docker-compose.yml
+Ejecución del proyecto
+1. Compilar microservicios
 
-GET /actuator/health
-GET /actuator/info
+Antes de levantar Docker es necesario generar los .jar.
 
-### Inventory Service
-
-GET /actuator/health
-GET /actuator/info
-
----
-
-# Endpoints principales
-
-## Products Service
-
-Crear producto
-
-POST /products
-
-
-Obtener producto
-
-
-GET /products/{id}
-
----
-
-## Inventory Service
-
-Crear inventario
-
-POST /inventory
-
-Obtener inventario por producto
-
-GET /inventory/product/{productId}
-
-Comprar producto
-
-POST /inventory/purchase
-
----
-
-# Ejemplo de flujo completo
-
-### 1 Crear producto
-
-POST /products
-
----
-
-### 2 Crear inventario
-
-POST /inventory
-
-{
-	"productId": "UUID",
-	"available": 10
-}
-
----
-
-### 3 Comprar producto
-
-POST /inventory/purchase
-
-Header:
-
-Idempotency-Key: compra-001
-
-Body:
-
-{
-	"productId": "UUID",
-	"quantity": 1
-}
-
----
-
-# Ejecución del proyecto
-
-## Ejecutar servicios localmente
-
-### products-service
-
-mvn spring-boot:run
-
-### inventory-service
-
-mvn spring-boot:run
-
----
-
-# Ejecutar con Docker
+Products service
+cd products
+mvn clean package -DskipTests
+Inventory service
+cd ../inventory
+mvn clean package -DskipTests
+2. Levantar el sistema completo
+
+Desde la raíz del proyecto:
 
 docker-compose up --build
 
-Esto iniciará:
+Docker levantará automáticamente:
 
-- PostgreSQL
-- products-service
-- inventory-service
+products-db
 
----
+inventory-db
 
-# Puertos utilizados
+products-service
 
-| Servicio | Puerto |
-|--------|--------|
-| products-service | 8081 |
-| inventory-service | 8082 |
-| PostgreSQL | 5432 |
+inventory-service
 
----
+frontend
 
-# Autor
+Acceso al sistema
 
-Prueba técnica desarrollada por **Hugo Salcedo**.
+Frontend:
+
+http://localhost:5173
+Puertos utilizados
+Servicio	Puerto
+Frontend	5173
+Products Service	8081
+Inventory Service	8082
+Products DB	5433
+Inventory DB	5434
+Credenciales de acceso
+
+Usuario:
+
+admin
+
+Contraseña:
+
+admin123
+Flujo básico de uso
+
+Iniciar sesión
+
+Consultar el listado de productos
+
+Filtrar o buscar productos
+
+Ver detalle del producto
+
+Consultar inventario
+
+Realizar compra
+
+Seguridad
+
+El sistema implementa dos niveles de seguridad:
+
+Autenticación de usuario
+
+Se utiliza JWT para autenticar usuarios desde el frontend.
+
+Seguridad entre microservicios
+
+Los microservicios se comunican mediante API Key.
+
+Resiliencia
+
+Las llamadas entre microservicios utilizan Resilience4j para manejar fallos:
+
+Retry
+
+Timeout
+
+Circuit Breaker
+
+Esto permite evitar fallos en cascada cuando un servicio no está disponible.
+
+Notas adicionales
+
+Cada microservicio utiliza su propia base de datos.
+
+El frontend se conecta directamente a los microservicios mediante HTTP.
+
+Docker Compose permite levantar toda la infraestructura con un solo comando.
+
+Autor
+
+Hugo Salcedo
+Ingeniero de Software
+Desarrollo Backend Java / Spring Boot
+Full Stack Web Developer
