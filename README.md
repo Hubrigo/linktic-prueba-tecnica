@@ -247,6 +247,69 @@ El frontend se conecta directamente a los microservicios mediante HTTP.
 
 Docker Compose permite levantar toda la infraestructura con un solo comando.
 
+Colección Postman
+
+Se incluye una colección de Postman para facilitar las pruebas de la API.
+
+Ubicación:
+
+postman/linktic-microservices.postman_collection.json
+
+Para utilizarla:
+
+Abrir Postman
+
+Click en Import
+
+Seleccionar el archivo JSON
+
+Ejecutar las requests disponibles
+
+La colección incluye:
+
+Login
+
+Crear producto
+
+Actualizar producto
+
+Listar productos
+
+Obtener producto por id
+
+Crear inventario
+
+Consultar inventario
+
+Comprar producto
+
+Health checks
+
+Flujo de pruebas sugerido
+
+Login
+
+POST /auth/login
+
+Body:
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+Crear producto
+
+POST /products
+
+Crear inventario
+
+POST /inventory
+
+Comprar producto
+
+POST /inventory/purchase
+
 Autor
 
 Hugo Salcedo
