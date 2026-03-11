@@ -1,65 +1,104 @@
 <template>
-  <div class="app-container">
-    <header class="app-header">
-      <h1>Prueba Técnica Full Stack</h1>
-      <nav class="app-nav">
-        <router-link to="/products">Productos</router-link>
-        <router-link to="/login">Login</router-link>
-      </nav>
+  <div>
+
+    <header class="navbar">
+      <div class="navbar-left">
+        <h2 class="logo">Prueba Técnica Full Stack</h2>
+
+        <nav class="nav-links">
+          <router-link to="/products">Productos</router-link>
+          <router-link to="/login">Login</router-link>
+        </nav>
+      </div>
+
+      <div class="navbar-right">
+        <button v-if="isLogged" @click="logout" class="logout-btn">
+          Cerrar sesión
+        </button>
+      </div>
     </header>
 
-    <main class="app-main">
+    <main class="container">
       <router-view />
     </main>
+
   </div>
 </template>
 
 <script setup>
+
+import { computed } from "vue"
+import { useRouter } from "vue-router"
+
+const router = useRouter()
+
+const isLogged = computed(() => {
+  return !!localStorage.getItem("token")
+})
+
+const logout = () => {
+  localStorage.removeItem("token")
+  router.push("/login")
+}
+
 </script>
 
 <style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f5f5f5;
-  color: #222;
-}
-
-#app {
-  min-height: 100vh;
-}
-
-.app-container {
-  min-height: 100vh;
-}
-
-.app-header {
-  background: #1f2937;
-  color: white;
-  padding: 16px 24px;
-}
-
-.app-header h1 {
-  margin: 0 0 12px 0;
-  font-size: 24px;
-}
-
-.app-nav {
+.navbar {
   display: flex;
-  gap: 16px;
-}
+  justify-content: space-between;
+  align-items: center;
 
-.app-nav a {
+  background: #1e293b;
   color: white;
+  padding: 14px 30px;
+}
+
+.logo {
+  margin: 0;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 20px;
+}
+
+.nav-links a {
+  color: #cbd5f5;
   text-decoration: none;
-  font-weight: bold;
+  font-weight: 500;
 }
 
-.app-nav a.router-link-active {
-  text-decoration: underline;
+.nav-links a:hover {
+  color: white;
 }
 
-.app-main {
-  padding: 24px;
+.navbar-right {
+  display: flex;
+  align-items: center;
+}
+
+.logout-btn {
+  padding: 6px 14px;
+  background: #ef4444;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.logout-btn:hover {
+  background: #dc2626;
+}
+.container {
+  margin-top: 20px;
 }
 </style>

@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -21,19 +22,27 @@ public class ApiKeyFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        String uri = request.getRequestURI();
+        if (HttpMethod.OPTIONS.matches(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-        if (uri.matches("^/products/.*/exists$")) {
-            String apiKey = request.getHeader("X-API-Key");
+        String path = request.getRequestURI();
 
-            if (apiKey == null || !apiKey.equals(expectedApiKey)) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json");
-                response.getWriter().write("""
-                    {"error":"Invalid API Key"}
-                """);
-                return;
-            }
+        if (!path.matches("^/products/[a-fA-F0-9\\-]+/exists$")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String apiKey = request.getHeader("X-API-Key");
+
+        if (apiKey == null || !apiKey.equals(expectedApiKey)) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("""
+                {"error":"Invalid API Key","status":401}
+            """);
+            return;
         }
 
         filterChain.doFilter(request, response);
