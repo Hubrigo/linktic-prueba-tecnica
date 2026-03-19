@@ -15,11 +15,11 @@ public interface InventoryRepository extends JpaRepository<Inventory, UUID> {
 
     @Modifying
     @Query("""
-        update Inventory i
-           set i.available = i.available - :quantity
-         where i.productId = :productId
-           and i.available >= :quantity
-    """)
+    update Inventory i
+       set i.available = i.available - :quantity
+     where i.productId = :productId
+       and i.available >= :quantity
+""")
     int decreaseStockIfAvailable(@Param("productId") UUID productId,
                                  @Param("quantity") Integer quantity);
 }

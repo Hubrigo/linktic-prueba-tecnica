@@ -68,7 +68,7 @@ public class InventoryService {
                 request.getProductId(), request.getQuantity());
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
+                    HttpStatus.UNPROCESSABLE_ENTITY,
                     "Idempotency-Key header is required"
             );
         }
@@ -85,6 +85,9 @@ public class InventoryService {
                         "Idempotency-Key already used with different request"
                 );
             }
+
+            log.info("Idempotent replay detected for key={}, productId={}",
+                    idempotencyKey, request.getProductId());
 
             try {
                 return objectMapper.readValue(existingRecord.getResponseBody(), PurchaseResponse.class);
@@ -141,7 +144,7 @@ public class InventoryService {
                     .idempotencyKey(idempotencyKey)
                     .requestHash(requestHash)
                     .responseBody(objectMapper.writeValueAsString(response))
-                    .responseStatus(HttpStatus.OK.value())
+                    .responseStatus(HttpStatus.CREATED.value())
                     .build();
 
             idempotencyRecordRepository.save(record);
