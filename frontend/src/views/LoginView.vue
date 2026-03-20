@@ -1,166 +1,105 @@
 <template>
-  <div class="login-page">
-    <div class="login-card">
-      <h2>Iniciar sesión</h2>
-      <form @submit.prevent="handleLogin" class="login-form">
-        <div class="field">
-          <label for="username">Usuario</label>
+  <div class="flex justify-center pt-6 md:pt-10">
+    <div class="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="mb-6">
+        <h2 class="text-2xl font-bold text-slate-800">Iniciar sesión</h2>
+        <p class="mt-2 text-sm text-slate-500">
+          Ingresa tus credenciales para acceder al módulo de productos e inventario.
+        </p>
+      </div>
+
+      <form @submit.prevent="handleLogin" class="space-y-4">
+        <div>
+          <label for="username" class="mb-2 block text-sm font-semibold text-slate-700">
+            Usuario
+          </label>
           <input
             id="username"
             v-model="username"
             type="text"
             placeholder="admin"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
           />
         </div>
 
-        <div class="field">
-          <label for="password">Contraseña</label>
+        <div>
+          <label for="password" class="mb-2 block text-sm font-semibold text-slate-700">
+            Contraseña
+          </label>
           <input
             id="password"
             v-model="password"
             type="password"
             placeholder="admin123"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
           />
         </div>
 
-        <button type="submit" :disabled="loading">
+        <button
+          type="submit"
+          :disabled="loading"
+          class="w-full rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
           {{ loading ? "Ingresando..." : "Ingresar" }}
         </button>
       </form>
 
-      <p v-if="successMessage" class="success-msg">{{ successMessage }}</p>
-      <p v-if="errorMessage" class="error-msg">{{ errorMessage }}</p>
+      <div
+        v-if="successMessage"
+        class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+      >
+        {{ successMessage }}
+      </div>
+
+      <div
+        v-if="error"
+        class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+      >
+        {{ error }}
+      </div>
+
+      <div class="mt-6 rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        <p class="font-semibold text-slate-700">Credenciales de prueba</p>
+        <p class="mt-1">Usuario: <span class="font-medium">admin</span></p>
+        <p>Contraseña: <span class="font-medium">admin123</span></p>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref } from "vue"
+import { storeToRefs } from "pinia"
 import { useRouter } from "vue-router"
-import { login } from "../api/authApi"
+import { useAuthStore } from "../stores/authStore"
 
 const router = useRouter()
+const authStore = useAuthStore()
+
+const { loading, error } = storeToRefs(authStore)
 
 const username = ref("")
 const password = ref("")
-const loading = ref(false)
-const errorMessage = ref("")
 const successMessage = ref("")
 
 const handleLogin = async () => {
-  errorMessage.value = ""
   successMessage.value = ""
 
   try {
-    loading.value = true
-
-    const data = await login({
+    const ok = await authStore.login({
       username: username.value,
       password: password.value
     })
 
-    localStorage.setItem("token", data.token)
-    successMessage.value = "Login exitoso"
+    if (ok) {
+      successMessage.value = "Login exitoso"
 
-    setTimeout(() => {
-      router.push("/products")
-    }, 700)
+      setTimeout(() => {
+        router.push("/products")
+      }, 700)
+    }
   } catch (e) {
     console.error(e)
-    errorMessage.value = "Usuario o contraseña inválidos"
-  } finally {
-    loading.value = false
   }
 }
 </script>
-
-<style>
-.login-page {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-}
-
-.login-card {
-  width: 100%;
-  max-width: 420px;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  padding: 24px;
-}
-
-.login-card h2 {
-  margin-top: 0;
-}
-
-.subtitle {
-  color: #475569;
-  margin-bottom: 20px;
-}
-
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.field label {
-  font-weight: bold;
-  color: #334155;
-}
-
-.field input {
-  padding: 10px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-}
-
-.login-form button {
-  padding: 10px 16px;
-  background: #2563eb;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.login-form button:hover {
-  background: #1d4ed8;
-}
-
-.login-form button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.success-msg {
-  color: #166534;
-  background: #dcfce7;
-  padding: 12px;
-  border-radius: 6px;
-  margin-top: 16px;
-}
-
-.error-msg {
-  color: #991b1b;
-  background: #fee2e2;
-  padding: 12px;
-  border-radius: 6px;
-  margin-top: 16px;
-}
-
-.hint-box {
-  margin-top: 20px;
-  background: #f8fafc;
-  padding: 14px;
-  border-radius: 8px;
-  color: #334155;
-}
-</style>

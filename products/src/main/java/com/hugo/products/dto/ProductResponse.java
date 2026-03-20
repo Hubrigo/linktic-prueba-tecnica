@@ -4,7 +4,7 @@ import com.hugo.products.model.ProductStatus;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
@@ -19,5 +19,7 @@ public class ProductResponse {
     private String name;
     private BigDecimal price;
     private ProductStatus status;
-    private Instant createdAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
 }

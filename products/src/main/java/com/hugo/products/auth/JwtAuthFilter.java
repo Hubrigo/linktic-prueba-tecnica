@@ -26,19 +26,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        // MUY IMPORTANTE: dejar pasar preflight CORS
+        // Permitir preflight CORS
         if (HttpMethod.OPTIONS.matches(request.getMethod())) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        if (path.startsWith("/auth") || path.startsWith("/actuator")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        // El endpoint interno entre microservicios no usa JWT
-        if (path.matches("^/products/[a-fA-F0-9\\-]+/exists$")) {
+        // Rutas públicas o excluidas del JWT
+        if (isExcluded(path)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -67,5 +62,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 {"error":"Invalid or expired token","status":401}
             """);
         }
+    }
+
+    private boolean isExcluded(String path) {
+        return path.startsWith("/auth")
+                || path.startsWith("/actuator")
+                || path.startsWith("/swagger-ui")
+                || path.equals("/swagger-ui.html")
+                || path.startsWith("/v3/api-docs")
+                || path.matches("^/products/[a-fA-F0-9\\-]+/exists$");
     }
 }

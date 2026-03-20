@@ -1,414 +1,257 @@
 <template>
-  <div class="products-page">
-    <div class="page-header">
-      <div>
-        <h2>Listado de productos</h2>
-        <p class="subtitle">
-          Consulta, busca y navega por el catálogo de productos.
-        </p>
+  <div class="space-y-6">
+    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-800">Productos</h1>
+          <p class="mt-1 text-sm text-slate-500">
+            Consulta, filtra y navega por el catálogo de productos registrados.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div>
+            <label class="mb-2 block text-sm font-semibold text-slate-700">
+              Buscar
+            </label>
+            <input
+              v-model="filters.search"
+              type="text"
+              placeholder="Buscar por nombre o SKU"
+              :class="[inputBaseClasses, inputStateClasses.normal]"
+            />
+          </div>
+
+          <div>
+            <label class="mb-2 block text-sm font-semibold text-slate-700">
+              Estado
+            </label>
+            <select
+              v-model="filters.status"
+              :class="[inputBaseClasses, inputStateClasses.normal]"
+            >
+              <option value="">Todos</option>
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="INACTIVE">INACTIVE</option>
+            </select>
+          </div>
+
+          <div class="flex items-end gap-2">
+            <button
+              @click="applyFilters"
+              :disabled="loading"
+              :class="buttonClasses.primary"
+            >
+              Filtrar
+            </button>
+
+            <button
+              @click="clearFilters"
+              :disabled="loading"
+              :class="buttonClasses.secondary"
+            >
+              Limpiar
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <section class="filters-card">
-      <div class="filters-grid">
-        <div class="field">
-          <label for="search">Buscar</label>
-          <input
-            id="search"
-            v-model="search"
-            type="text"
-            placeholder="Nombre o SKU"
-            @keyup.enter="handleSearch"
-          />
-        </div>
-
-        <div class="field">
-          <label for="status">Estado</label>
-          <select id="status" v-model="status">
-            <option value="">Todos</option>
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="INACTIVE">INACTIVE</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="size">Registros por página</label>
-          <select id="size" v-model.number="size" @change="handleSearch">
-            <option :value="5">5</option>
-            <option :value="10">10</option>
-            <option :value="15">15</option>
-          </select>
+    <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div class="border-b border-slate-200 px-6 py-4">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 class="text-lg font-semibold text-slate-800">Listado de productos</h2>
+          <p class="text-sm text-slate-500">
+            Total encontrados:
+            <span class="font-semibold text-slate-700">
+              {{ meta.totalElements }}
+            </span>
+          </p>
         </div>
       </div>
 
-      <div class="filters-actions">
-        <button class="primary-btn" @click="handleSearch">Buscar</button>
-        <button class="secondary-btn" @click="clearFilters">Limpiar</button>
+      <div class="p-6">
+        <AppAlert
+          v-if="error"
+          type="error"
+          :message="error"
+        />
+
+        <AppLoader
+          v-else-if="loading"
+          message="Cargando productos..."
+        />
+
+        <EmptyState
+          v-else-if="!products.length"
+          title="No se encontraron productos"
+          description="Prueba ajustando los filtros o crea un nuevo producto desde la barra de navegación."
+        />
+
+        <div v-else class="space-y-4">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+              <thead class="bg-slate-50">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    SKU
+                  </th>
+                  <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    Nombre
+                  </th>
+                  <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    Precio
+                  </th>
+                  <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    Estado
+                  </th>
+                  <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    Acción
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody class="divide-y divide-slate-200 bg-white">
+                <tr
+                  v-for="product in products"
+                  :key="product.id"
+                  class="transition hover:bg-slate-50"
+                >
+                  <td class="px-4 py-4 text-sm text-slate-700">
+                    {{ product.sku }}
+                  </td>
+                  <td class="px-4 py-4 text-sm font-medium text-slate-800">
+                    {{ product.name }}
+                  </td>
+                  <td class="px-4 py-4 text-sm text-slate-700">
+                    {{ formatPrice(product.price) }}
+                  </td>
+                  <td class="px-4 py-4 text-sm">
+                    <span
+                      :class="product.status === 'ACTIVE'
+                        ? 'inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700'
+                        : 'inline-flex rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700'"
+                    >
+                      {{ product.status }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-4 text-sm">
+                    <router-link
+                      :to="`/products/${product.id}`"
+                      class="font-medium text-blue-600 transition hover:text-blue-700"
+                    >
+                      Ver detalle
+                    </router-link>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div
+            v-if="meta.totalPages > 0"
+            class="flex flex-col gap-4 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <p class="text-sm text-slate-500">
+              Página
+              <span class="font-semibold text-slate-700">
+                {{ currentPage + 1 }}
+              </span>
+              de
+              <span class="font-semibold text-slate-700">
+                {{ meta.totalPages }}
+              </span>
+            </p>
+
+            <div class="flex gap-2">
+              <button
+                @click="changePage(currentPage - 1)"
+                :disabled="currentPage === 0 || loading"
+                :class="buttonClasses.secondary"
+              >
+                Anterior
+              </button>
+
+              <button
+                @click="changePage(currentPage + 1)"
+                :disabled="currentPage + 1 >= meta.totalPages || loading"
+                :class="buttonClasses.secondary"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-    </section>
-
-    <p v-if="loading" class="info-msg">Cargando productos...</p>
-    <p v-else-if="error" class="error-msg">{{ error }}</p>
-
-    <template v-else>
-      <section v-if="products.length" class="table-card">
-        <div class="table-header">
-          <span>Total productos encontrados: {{ totalElements }}</span>
-          <span>Página {{ page + 1 }} de {{ totalPages }}</span>
-        </div>
-
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>SKU</th>
-                <th>Nombre</th>
-                <th>Precio</th>
-                <th>Estado</th>
-                <th>Fecha creación</th>
-                <th>Acción</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr v-for="p in products" :key="p.id">
-                <td>{{ p.sku }}</td>
-                <td>{{ p.name }}</td>
-                <td class="price">${{ formatPrice(p.price) }}</td>
-                <td>
-                  <span class="status-badge" :class="p.status?.toLowerCase()">
-                    {{ p.status }}
-                  </span>
-                </td>
-                <td>{{ formatDate(p.createdAt) }}</td>
-                <td>
-                  <router-link class="detail-link" :to="`/products/${p.id}`">
-                    Ver detalle
-                  </router-link>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="pagination-box">
-          <button @click="previousPage" :disabled="page === 0">
-            Anterior
-          </button>
-
-          <span class="pagination-text">
-            Página {{ page + 1 }} de {{ totalPages }}
-          </span>
-
-          <button @click="nextPage" :disabled="page >= totalPages - 1">
-            Siguiente
-          </button>
-        </div>
-      </section>
-
-      <section v-else class="empty-card">
-        <h3>No se encontraron productos</h3>
-        <p>Intenta cambiar los filtros o limpiar la búsqueda.</p>
-      </section>
-    </template>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue"
-import { getProducts } from "../api/productsApi"
+import { reactive, ref, onMounted } from "vue"
+import { storeToRefs } from "pinia"
+import { useProductStore } from "../stores/productStore"
+import AppAlert from "../components/AppAlert.vue"
+import AppLoader from "../components/AppLoader.vue"
+import EmptyState from "../components/EmptyState.vue"
+import {
+  buttonClasses,
+  inputBaseClasses,
+  inputStateClasses
+} from "../utils/uiClasses"
 
-const products = ref([])
-const loading = ref(false)
-const error = ref("")
+const productStore = useProductStore()
+const { products, loading, error, meta } = storeToRefs(productStore)
 
-const search = ref("")
-const status = ref("")
+const currentPage = ref(0)
 
-const page = ref(0)
-const size = ref(5)
-const totalPages = ref(0)
-const totalElements = ref(0)
-
-const formatPrice = (value) => {
-  return new Intl.NumberFormat("es-CO").format(value || 0)
-}
-
-const formatDate = (value) => {
-  if (!value) return "-"
-  return new Date(value).toLocaleString("es-CO")
-}
+const filters = reactive({
+  search: "",
+  status: ""
+})
 
 const loadProducts = async () => {
-  loading.value = true
-  error.value = ""
-
   try {
-    const params = {
-      page: page.value,
-      size: size.value,
+    await productStore.fetchProducts({
+      page: currentPage.value,
+      size: 5,
+      search: filters.search || undefined,
+      status: filters.status || undefined,
       sortBy: "createdAt",
       direction: "desc"
-    }
-
-    if (search.value.trim()) {
-      params.search = search.value.trim()
-    }
-
-    if (status.value) {
-      params.status = status.value
-    }
-
-    const data = await getProducts(params)
-
-    products.value = data.content
-    totalPages.value = data.totalPages
-    totalElements.value = data.totalElements
+    })
   } catch (e) {
     console.error(e)
-    error.value = "Error cargando productos"
-  } finally {
-    loading.value = false
   }
 }
 
-const handleSearch = async () => {
-  page.value = 0
+const applyFilters = async () => {
+  currentPage.value = 0
   await loadProducts()
 }
 
 const clearFilters = async () => {
-  search.value = ""
-  status.value = ""
-  page.value = 0
-  size.value = 5
+  filters.search = ""
+  filters.status = ""
+  currentPage.value = 0
   await loadProducts()
 }
 
-const previousPage = async () => {
-  if (page.value > 0) {
-    page.value--
-    await loadProducts()
-  }
+const changePage = async (page) => {
+  if (page < 0 || page >= meta.value.totalPages) return
+  currentPage.value = page
+  await loadProducts()
 }
 
-const nextPage = async () => {
-  if (page.value < totalPages.value - 1) {
-    page.value++
-    await loadProducts()
-  }
+const formatPrice = (value) => {
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0
+  }).format(value)
 }
 
-onMounted(loadProducts)
+onMounted(async () => {
+  await loadProducts()
+})
 </script>
-
-<style>
-.products-page {
-  max-width: 1200px;
-}
-
-.page-header {
-  margin-bottom: 20px;
-}
-
-.page-header h2 {
-  margin-bottom: 6px;
-}
-
-.subtitle {
-  margin: 0;
-  color: #475569;
-}
-
-.filters-card,
-.table-card,
-.empty-card {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 20px;
-}
-
-.filters-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.field label {
-  font-size: 14px;
-  font-weight: bold;
-  color: #334155;
-}
-
-.field input,
-.field select {
-  padding: 10px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-}
-
-.filters-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 18px;
-}
-
-.primary-btn,
-.secondary-btn,
-.pagination-box button {
-  padding: 10px 16px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.primary-btn {
-  background: #2563eb;
-  color: white;
-}
-
-.primary-btn:hover {
-  background: #1d4ed8;
-}
-
-.secondary-btn {
-  background: #e2e8f0;
-  color: #0f172a;
-}
-
-.secondary-btn:hover {
-  background: #cbd5e1;
-}
-
-.table-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-  color: #475569;
-  font-size: 14px;
-}
-
-.table-wrapper {
-  overflow-x: auto;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: white;
-}
-
-th,
-td {
-  border-bottom: 1px solid #e5e7eb;
-  padding: 12px;
-  text-align: left;
-}
-
-th {
-  background: #f8fafc;
-  color: #0f172a;
-  font-size: 14px;
-}
-
-tr:hover {
-  background: #f8fafc;
-}
-
-.price {
-  font-weight: bold;
-  color: #0f172a;
-}
-
-.status-badge {
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: bold;
-  display: inline-block;
-}
-
-.status-badge.active {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-badge.inactive {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.detail-link {
-  color: #2563eb;
-  font-weight: bold;
-  text-decoration: none;
-}
-
-.detail-link:hover {
-  text-decoration: underline;
-}
-
-.pagination-box {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 16px;
-  margin-top: 20px;
-}
-
-.pagination-box button {
-  background: #2c3e50;
-  color: white;
-}
-
-.pagination-box button:hover {
-  background: #1a252f;
-}
-
-.pagination-box button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pagination-text {
-  font-weight: bold;
-}
-
-.info-msg {
-  color: #334155;
-}
-
-.error-msg {
-  color: #991b1b;
-  background: #fee2e2;
-  padding: 12px;
-  border-radius: 6px;
-}
-
-.empty-card h3 {
-  margin-top: 0;
-}
-
-.empty-card p {
-  color: #475569;
-}
-
-@media (max-width: 900px) {
-  .filters-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .table-header {
-    flex-direction: column;
-  }
-}
-</style>

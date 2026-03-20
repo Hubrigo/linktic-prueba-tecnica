@@ -1,26 +1,50 @@
 import { createRouter, createWebHistory } from "vue-router"
+import { useAuthStore } from "../stores/authStore"
 
 import ProductsView from "../views/ProductsView.vue"
 import ProductDetailView from "../views/ProductDetailView.vue"
 import LoginView from "../views/LoginView.vue"
+import CreateProductView from "../views/CreateProductView.vue"
+import CreateInventoryView from "../views/CreateInventoryView.vue"
 
 const routes = [
   {
     path: "/",
-    redirect: "/products"
+    redirect: { name: "products" }
   },
   {
     path: "/login",
+    name: "login",
     component: LoginView,
     meta: { public: true }
   },
   {
     path: "/products",
-    component: ProductsView
+    name: "products",
+    component: ProductsView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: "/products/create",
+    name: "create-product",
+    component: CreateProductView,
+    meta: { requiresAuth: true }
   },
   {
     path: "/products/:id",
-    component: ProductDetailView
+    name: "product-detail",
+    component: ProductDetailView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: "/inventory/create",
+    name: "create-inventory",
+    component: CreateInventoryView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: "/:pathMatch(.*)*",
+    redirect: { name: "products" }
   }
 ]
 
@@ -29,21 +53,18 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to) => {
+  const authStore = useAuthStore()
 
-  const token = localStorage.getItem("token")
-
-  if (!to.meta.public && !token) {
-    next("/login")
-    return
+  if (to.meta.requiresAuth && !authStore.isLogged) {
+    return { name: "login" }
   }
 
-  if (to.path === "/login" && token) {
-    next("/products")
-    return
+  if (to.name === "login" && authStore.isLogged) {
+    return { name: "products" }
   }
 
-  next()
+  return true
 })
 
 export default router

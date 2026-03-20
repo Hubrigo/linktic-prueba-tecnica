@@ -12,12 +12,26 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+const mapResource = (resource) => ({
+  id: resource.id,
+  ...resource.attributes
+})
+
 export const getProducts = async (params = {}) => {
   const response = await api.get("/products", { params })
-  return response.data
+
+  return {
+    data: response.data.data.map(mapResource),
+    meta: response.data.meta
+  }
 }
 
 export const getProductById = async (id) => {
   const response = await api.get(`/products/${id}`)
-  return response.data
+  return mapResource(response.data.data)
+}
+
+export const createProduct = async (payload) => {
+  const response = await api.post("/products", payload)
+  return mapResource(response.data.data)
 }
