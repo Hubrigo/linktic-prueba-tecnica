@@ -1,370 +1,324 @@
 <template>
-  <div class="detail-page">
-    <button @click="goBack" class="back-btn">
-      ← Volver
-    </button>
+  <div class="space-y-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-800">Detalle del producto</h1>
+        <p class="mt-1 text-sm text-slate-500">
+          Consulta la información del producto, su inventario disponible y realiza una compra.
+        </p>
+      </div>
 
-    <h2 class="page-title">Detalle del producto</h2>
+      <router-link
+        to="/products"
+        class="inline-flex items-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+      >
+        Volver
+      </router-link>
+    </div>
 
-    <p v-if="loading" class="info-msg">Cargando detalle...</p>
-    <p v-else-if="error" class="error-msg">{{ error }}</p>
+    <AppLoader
+      v-if="loadingProduct"
+      message="Cargando información del producto..."
+    />
 
-    <div v-else-if="product" class="detail-layout">
-      <section class="product-card">
-        <div class="card-header">
-          <h3>{{ product.name }}</h3>
-          <span class="status-badge" :class="product.status?.toLowerCase()">
-            {{ product.status }}
-          </span>
+    <AppAlert
+      v-else-if="productError"
+      type="error"
+      :message="productError"
+    />
+
+    <template v-else-if="product">
+      <div class="grid gap-6 lg:grid-cols-3">
+        <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p class="text-sm font-medium uppercase tracking-wide text-slate-500">
+                {{ product.sku }}
+              </p>
+              <h2 class="mt-1 text-2xl font-bold text-slate-800">
+                {{ product.name }}
+              </h2>
+              <p class="mt-3 text-3xl font-bold text-blue-600">
+                {{ formatPrice(product.price) }}
+              </p>
+            </div>
+
+            <span
+              :class="product.status === 'ACTIVE'
+                ? 'inline-flex rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-700'
+                : 'inline-flex rounded-full bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700'"
+            >
+              {{ product.status }}
+            </span>
+          </div>
+
+          <div class="mt-8 grid gap-4 sm:grid-cols-2">
+            <div class="rounded-lg bg-slate-50 p-4">
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                ID del producto
+              </p>
+              <p class="mt-2 break-all text-sm text-slate-700">
+                {{ product.id }}
+              </p>
+            </div>
+
+            <div class="rounded-lg bg-slate-50 p-4">
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Estado actual
+              </p>
+              <p class="mt-2 text-sm font-medium text-slate-700">
+                {{ product.status }}
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div class="card-grid">
-          <div class="info-item">
-            <span class="label">ID</span>
-            <span class="value">{{ product.id }}</span>
+        <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div class="mb-4">
+            <h3 class="text-lg font-semibold text-slate-800">Inventario</h3>
+            <p class="mt-1 text-sm text-slate-500">
+              Estado actual del stock del producto.
+            </p>
           </div>
 
-          <div class="info-item">
-            <span class="label">SKU</span>
-            <span class="value">{{ product.sku }}</span>
-          </div>
-
-          <div class="info-item">
-            <span class="label">Precio</span>
-            <span class="value price">${{ formatPrice(product.price) }}</span>
-          </div>
-
-          <div class="info-item">
-            <span class="label">Fecha creación</span>
-            <span class="value">{{ formatDate(product.createdAt) }}</span>
-          </div>
-        </div>
-      </section>
-
-      <section class="purchase-card">
-        <h3>Inventario y compra</h3>
-
-        <p v-if="inventoryLoading" class="info-msg">Cargando inventario...</p>
-        <p v-else-if="inventoryError" class="error-msg">{{ inventoryError }}</p>
-
-        <div v-else class="stock-box">
-          <span class="label">Stock disponible</span>
-          <span class="stock-value">{{ inventory?.available ?? 0 }}</span>
-        </div>
-
-        <div class="purchase-box">
-          <label for="quantity" class="label">Cantidad</label>
-          <input
-            id="quantity"
-            v-model.number="quantity"
-            type="number"
-            min="1"
-            class="quantity-input"
+          <AppLoader
+            v-if="loadingInventory"
+            message="Cargando inventario..."
           />
 
-          <button
-            @click="handlePurchase"
-            :disabled="purchasing || inventoryLoading || !inventory"
-            class="buy-btn"
-          >
-            {{ purchasing ? 'Comprando...' : 'Comprar' }}
-          </button>
+          <AppAlert
+            v-else-if="inventoryError"
+            type="warning"
+            :message="inventoryError"
+          />
+
+          <div v-else-if="inventory" class="space-y-4">
+            <div class="rounded-lg bg-slate-50 p-4">
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Stock disponible
+              </p>
+              <p class="mt-2 text-3xl font-bold text-slate-800">
+                {{ inventory.available }}
+              </p>
+            </div>
+
+            <div class="rounded-lg bg-slate-50 p-4">
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Product ID asociado
+              </p>
+              <p class="mt-2 break-all text-sm text-slate-700">
+                {{ inventory.productId }}
+              </p>
+            </div>
+          </div>
+
+          <EmptyState
+            v-else
+            title="Sin inventario registrado"
+            description="Este producto aún no tiene stock asociado. Puedes crearlo desde la opción de inventario."
+          />
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold text-slate-800">Comprar producto</h3>
+          <p class="mt-1 text-sm text-slate-500">
+            Ingresa la cantidad que deseas comprar. Se validará el stock disponible.
+          </p>
         </div>
 
-        <p v-if="purchaseMessage" class="success-msg">
-          {{ purchaseMessage }}
-        </p>
+        <form @submit.prevent="handlePurchase" class="space-y-4">
+          <div class="max-w-xs">
+            <label class="mb-2 block text-sm font-semibold text-slate-700">
+              Cantidad
+            </label>
+            <input
+              v-model.number="quantity"
+              type="number"
+              min="1"
+              placeholder="Ej: 2"
+              :class="[
+                inputBaseClasses,
+                fieldErrors.quantity ? inputStateClasses.error : inputStateClasses.normal
+              ]"
+            />
+            <p v-if="fieldErrors.quantity" class="mt-1 text-sm text-red-600">
+              {{ fieldErrors.quantity }}
+            </p>
+          </div>
 
-        <p v-if="purchaseError" class="error-msg">
-          {{ purchaseError }}
-        </p>
-      </section>
-    </div>
+          <div class="flex flex-col gap-3 sm:flex-row">
+            <button
+              type="submit"
+              :disabled="purchasing || !product"
+              :class="buttonClasses.primary"
+            >
+              {{ purchasing ? "Procesando compra..." : "Comprar" }}
+            </button>
+
+            <button
+              type="button"
+              @click="reloadInventory"
+              :disabled="loadingInventory"
+              :class="buttonClasses.secondary"
+            >
+              Actualizar inventario
+            </button>
+          </div>
+        </form>
+
+        <div class="mt-4 space-y-3">
+          <AppAlert
+            v-if="purchaseMessage"
+            type="success"
+            :message="purchaseMessage"
+          />
+
+          <AppAlert
+            v-if="purchaseError"
+            type="error"
+            :message="purchaseError"
+          />
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue"
-import { useRoute, useRouter } from "vue-router"
-import { getProductById } from "../api/productsApi"
-import { getInventoryByProductId, purchaseProduct } from "../api/inventoryApi"
+import { reactive, ref, onMounted, onBeforeUnmount, watch } from "vue"
+import { storeToRefs } from "pinia"
+import { useRoute } from "vue-router"
+import { useProductStore } from "../stores/productStore"
+import { useInventoryStore } from "../stores/inventoryStore"
+import AppAlert from "../components/AppAlert.vue"
+import AppLoader from "../components/AppLoader.vue"
+import EmptyState from "../components/EmptyState.vue"
+import {
+  buttonClasses,
+  inputBaseClasses,
+  inputStateClasses
+} from "../utils/uiClasses"
 
 const route = useRoute()
-const router = useRouter()
+const productStore = useProductStore()
+const inventoryStore = useInventoryStore()
 
-const product = ref(null)
-const inventory = ref(null)
+const {
+  product,
+  loading: loadingProduct,
+  error: productError
+} = storeToRefs(productStore)
 
-const loading = ref(true)
-const inventoryLoading = ref(true)
-const purchasing = ref(false)
-
-const error = ref("")
-const inventoryError = ref("")
-const purchaseError = ref("")
-const purchaseMessage = ref("")
+const {
+  inventory,
+  loading: loadingInventory,
+  purchasing,
+  error: inventoryError,
+  purchaseError,
+  purchaseMessage
+} = storeToRefs(inventoryStore)
 
 const quantity = ref(1)
 
-const goBack = () => {
-  router.back()
+const fieldErrors = reactive({
+  quantity: ""
+})
+
+const clearFieldErrors = () => {
+  fieldErrors.quantity = ""
 }
 
-const formatPrice = (value) => {
-  return new Intl.NumberFormat("es-CO").format(value || 0)
-}
+const productId = () => route.params.id
 
-const formatDate = (value) => {
-  if (!value) return "-"
-  return new Date(value).toLocaleString("es-CO")
-}
-
-const loadProduct = async () => {
+const loadData = async () => {
   try {
-    const data = await getProductById(route.params.id)
-    product.value = data
+    await productStore.fetchProductById(productId())
   } catch (e) {
     console.error(e)
-    error.value = "Error cargando el producto"
-  } finally {
-    loading.value = false
+  }
+
+  try {
+    await inventoryStore.fetchInventoryByProductId(productId())
+  } catch (e) {
+    console.error(e)
   }
 }
 
-const loadInventory = async () => {
-  inventoryLoading.value = true
-  inventoryError.value = ""
+const validatePurchase = () => {
+  clearFieldErrors()
 
-  try {
-    const data = await getInventoryByProductId(route.params.id)
-    inventory.value = data
-  } catch (e) {
-    console.error(e)
-    inventory.value = null
-    inventoryError.value = "No se pudo cargar el inventario"
-  } finally {
-    inventoryLoading.value = false
+  if (
+    quantity.value === null ||
+    quantity.value === "" ||
+    Number.isNaN(Number(quantity.value))
+  ) {
+    fieldErrors.quantity = "La cantidad es obligatoria"
+    return false
   }
+
+  if (Number(quantity.value) < 1) {
+    fieldErrors.quantity = "La cantidad debe ser mayor a 0"
+    return false
+  }
+
+  return true
 }
 
 const handlePurchase = async () => {
-  purchaseError.value = ""
-  purchaseMessage.value = ""
+  inventoryStore.clearMessages()
 
-  if (!quantity.value || quantity.value < 1) {
-    purchaseError.value = "La cantidad debe ser mayor a 0"
-    return
-  }
+  if (!validatePurchase()) return
 
   try {
-    purchasing.value = true
-
-    const response = await purchaseProduct({
-      productId: route.params.id,
-      quantity: quantity.value
+    await inventoryStore.buyProduct({
+      productId: productId(),
+      quantity: Number(quantity.value)
     })
 
-    purchaseMessage.value = `Compra realizada con éxito. Stock restante: ${response.remainingStock}`
     quantity.value = 1
-
-    await loadInventory()
+    clearFieldErrors()
+    await inventoryStore.fetchInventoryByProductId(productId())
   } catch (e) {
     console.error(e)
-
-    if (e.response?.status === 409) {
-      purchaseError.value = "No hay stock suficiente"
-    } else if (e.response?.status === 404) {
-      purchaseError.value = "No se encontró inventario para este producto"
-    } else if (e.response?.status === 503) {
-      purchaseError.value = "El servicio no está disponible en este momento"
-    } else {
-      purchaseError.value = "Error al realizar la compra"
-    }
-  } finally {
-    purchasing.value = false
   }
 }
+
+const reloadInventory = async () => {
+  try {
+    await inventoryStore.fetchInventoryByProductId(productId())
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+const formatPrice = (value) => {
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0
+  }).format(value)
+}
+
+watch(
+  () => route.params.id,
+  async () => {
+    quantity.value = 1
+    clearFieldErrors()
+    inventoryStore.clearMessages()
+    await loadData()
+  }
+)
 
 onMounted(async () => {
-  await loadProduct()
-  await loadInventory()
+  inventoryStore.clearMessages()
+  await loadData()
+})
+
+onBeforeUnmount(() => {
+  productStore.clearProduct()
+  inventoryStore.clearMessages()
+  clearFieldErrors()
 })
 </script>
-
-<style>
-.detail-page {
-  max-width: 1100px;
-}
-
-.page-title {
-  margin-bottom: 20px;
-}
-
-.back-btn {
-  margin-bottom: 16px;
-  padding: 10px 16px;
-  background: #2c3e50;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.back-btn:hover {
-  background: #1a252f;
-}
-
-.detail-layout {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 20px;
-}
-
-.product-card,
-.purchase-card {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  padding: 20px;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.card-header h3,
-.purchase-card h3 {
-  margin: 0;
-}
-
-.status-badge {
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: bold;
-}
-
-.status-badge.active {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.status-badge.inactive {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.card-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px;
-  background: #f8fafc;
-  border-radius: 8px;
-}
-
-.label {
-  font-size: 13px;
-  color: #475569;
-  font-weight: bold;
-}
-
-.value {
-  word-break: break-word;
-}
-
-.price {
-  font-size: 18px;
-  font-weight: bold;
-  color: #0f172a;
-}
-
-.stock-box {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 14px;
-  background: #f8fafc;
-  border-radius: 8px;
-  margin: 16px 0;
-}
-
-.stock-value {
-  font-size: 28px;
-  font-weight: bold;
-  color: #0f172a;
-}
-
-.purchase-box {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 16px;
-}
-
-.quantity-input {
-  width: 120px;
-  padding: 10px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-}
-
-.buy-btn {
-  width: fit-content;
-  padding: 10px 18px;
-  background: #2563eb;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.buy-btn:hover {
-  background: #1d4ed8;
-}
-
-.buy-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.info-msg {
-  color: #334155;
-}
-
-.success-msg {
-  color: #166534;
-  background: #dcfce7;
-  padding: 12px;
-  border-radius: 6px;
-  margin-top: 16px;
-}
-
-.error-msg {
-  color: #991b1b;
-  background: #fee2e2;
-  padding: 12px;
-  border-radius: 6px;
-  margin-top: 16px;
-}
-
-@media (max-width: 900px) {
-  .detail-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .card-grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>
