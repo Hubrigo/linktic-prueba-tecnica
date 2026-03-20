@@ -1,318 +1,155 @@
-Prueba Técnica Full Stack
+# 🧪 Prueba Técnica Full Stack - Inventario y Productos
 
-Java Spring Boot + Vue + Docker
+Aplicación full stack para la gestión de productos e inventario, desarrollada con arquitectura de microservicios.
 
-Descripción
+Incluye:
 
-Este proyecto corresponde a una prueba técnica Full Stack basada en una arquitectura de microservicios utilizando Java Spring Boot para el backend y Vue 3 para el frontend.
+- Microservicio de productos
+- Microservicio de inventario
+- Frontend en Vue 3
+- Autenticación con JWT
+- Compras con idempotencia
+- Orquestación de servicios con Docker Compose
 
-El sistema permite gestionar un catálogo de productos y su inventario, incluyendo funcionalidades como:
+---
 
-Autenticación mediante JWT
+## 🚀 Tecnologías utilizadas
 
-Consulta de productos con búsqueda, filtros y paginación
+### Backend
+- Java 17
+- Spring Boot
+- Spring Security con JWT
+- PostgreSQL
+- Maven
 
-Consulta de inventario por producto
+### Frontend
+- Vue 3
+- Vite
+- Pinia
+- Tailwind CSS
+- Axios
 
-Compra de productos
+### Infraestructura
+- Docker
+- Docker Compose
 
-Comunicación segura entre microservicios mediante API Key
+---
 
-Manejo de idempotencia en operaciones de compra
+## 📁 Estructura del proyecto
 
-Resiliencia en llamadas entre servicios mediante Resilience4j
+```text
+linktic-prueba-tecnica/
+├── frontend/
+├── products/
+├── inventory/
+├── docker-compose.yml
+└── README.md
 
-El sistema está completamente dockerizado, permitiendo levantar toda la aplicación con Docker Compose.
+⚙️ Ejecuci��n del proyecto con Docker
+Requisitos previos
 
-Arquitectura
-
-El sistema está compuesto por los siguientes servicios:
-
-Frontend (Vue)
-       |
-       v
-Products Service (Spring Boot)
-       |
-       v
-Inventory Service (Spring Boot)
-
-Cada microservicio utiliza su propia base de datos PostgreSQL.
-
-Servicios incluidos
-Servicio	Descripción
-products-service	Gestión de productos y autenticación
-inventory-service	Gestión de inventario y compras
-frontend	Aplicación web desarrollada con Vue
-products-db	Base de datos PostgreSQL para productos
-inventory-db	Base de datos PostgreSQL para inventario
-Tecnologías utilizadas
-Backend
-
-Java 17
-
-Spring Boot
-
-Spring Data JPA
-
-Hibernate
-
-PostgreSQL
-
-Resilience4j
-
-JWT (JSON Web Token)
-
-Frontend
-
-Vue 3
-
-Vite
-
-Axios
-
-CSS
-
-Infraestructura
+Antes de iniciar, asegúrate de tener instalado:
 
 Docker
 
 Docker Compose
 
-Funcionalidades implementadas
-Autenticación
+▶️ Levantar todo el proyecto
 
-Login mediante JWT
+Desde la raíz del proyecto, ejecuta:
 
-Protección de rutas en el frontend
+docker compose up --build
 
-Interceptor de Axios para enviar el token automáticamente
+Esto levantará:
+- Frontend
+- Microservicio de productos
+- Microservicio de inventario
+- Bases de datos necesarias para los servicios.
+
+🌐 Puertos esperados
+- Frontend: http://localhost:5173
+- Products Service: http://localhost:8081
+- Inventory Service: http://localhost:8082
+
+🔐 Autenticación
+
+La aplicación usa autenticación con JWT.
+
+Credenciales de prueba
+usuario: admin
+contraseña: admin123
+
+📌 Funcionalidades implementadas
 
 Productos
-
-Listado de productos
-
-Búsqueda por nombre o SKU
-
-Filtro por estado
-
-Paginación
+- Listado de productos con paginación
+- Filtro por búsqueda (name o sku) mediante parámetro search
+- Filtro por estado
+- Creación de productos
+- Consulta de detalle de producto
 
 Inventario
-
-Consulta de inventario por producto
-
-Registro de inventario
+- Consulta de inventario por producto
+- Creación de inventario
+- Visualización de stock disponible
 
 Compras
+- Compra de productos
+- Validación de stock disponible
+- Manejo de errores funcionales
+- Idempotencia mediante header Idempotency-Key
 
-Compra de productos
+🔎 Endpoints principales
+Products Service
 
-Validación de stock disponible
+Base URL:
+http://localhost:8081
 
-Manejo de idempotencia
+Obtener productos
+GET /products?page=0&size=5&search=texto&status=ACTIVE
 
-Comunicación entre microservicios
-
-Uso de API Key
-
-Manejo de errores entre servicios
-
-Resiliencia
-
-Retry
-
-Timeout
-
-Circuit Breaker con Resilience4j
-
-Observabilidad
-
-Endpoints disponibles:
-
-/actuator/health
-/actuator/info
-/actuator/metrics
-Estructura del proyecto
-linktic-microservices-test
-│
-├── products
-│   ├── src
-│   ├── Dockerfile
-│   └── pom.xml
-│
-├── inventory
-│   ├── src
-│   ├── Dockerfile
-│   └── pom.xml
-│
-├── frontend
-│   ├── src
-│   ├── Dockerfile
-│   └── package.json
-│
-└── docker-compose.yml
-Ejecución del proyecto
-1. Compilar microservicios
-
-Antes de levantar Docker es necesario generar los .jar.
-
-Products service
-cd products
-mvn clean package -DskipTests
-Inventory service
-cd ../inventory
-mvn clean package -DskipTests
-2. Levantar el sistema completo
-
-Desde la raíz del proyecto:
-
-docker-compose up --build
-
-Docker levantará automáticamente:
-
-products-db
-
-inventory-db
-
-products-service
-
-inventory-service
-
-frontend
-
-Acceso al sistema
-
-Frontend:
-
-http://localhost:5173
-Puertos utilizados
-Servicio	Puerto
-Frontend	5173
-Products Service	8081
-Inventory Service	8082
-Products DB	5433
-Inventory DB	5434
-Credenciales de acceso
-
-Usuario:
-
-admin
-
-Contraseña:
-
-admin123
-Flujo básico de uso
-
-Iniciar sesión
-
-Consultar el listado de productos
-
-Filtrar o buscar productos
-
-Ver detalle del producto
-
-Consultar inventario
-
-Realizar compra
-
-Seguridad
-
-El sistema implementa dos niveles de seguridad:
-
-Autenticación de usuario
-
-Se utiliza JWT para autenticar usuarios desde el frontend.
-
-Seguridad entre microservicios
-
-Los microservicios se comunican mediante API Key.
-
-Resiliencia
-
-Las llamadas entre microservicios utilizan Resilience4j para manejar fallos:
-
-Retry
-
-Timeout
-
-Circuit Breaker
-
-Esto permite evitar fallos en cascada cuando un servicio no está disponible.
-
-Notas adicionales
-
-Cada microservicio utiliza su propia base de datos.
-
-El frontend se conecta directamente a los microservicios mediante HTTP.
-
-Docker Compose permite levantar toda la infraestructura con un solo comando.
-
-Colección Postman
-
-Se incluye una colección de Postman para facilitar las pruebas de la API.
-
-Ubicación:
-
-postman/linktic-microservices.postman_collection.json
-
-Para utilizarla:
-
-Abrir Postman
-
-Click en Import
-
-Seleccionar el archivo JSON
-
-Ejecutar las requests disponibles
-
-La colección incluye:
-
-Login
+Obtener producto por ID
+GET /products/{id}
 
 Crear producto
-
-Actualizar producto
-
-Listar productos
-
-Obtener producto por id
-
-Crear inventario
-
-Consultar inventario
-
-Comprar producto
-
-Health checks
-
-Flujo de pruebas sugerido
-
-Login
-
-POST /auth/login
-
-Body:
-
-{
-  "username": "admin",
-  "password": "admin123"
-}
-
-Crear producto
-
 POST /products
 
-Crear inventario
+Inventory Service
+Base URL:
+http://localhost:8082
 
+Obtener inventario por producto
+GET /inventory/{productId}
+
+Crear inventario
 POST /inventory
 
 Comprar producto
-
 POST /inventory/purchase
 
-Autor
+Header requerido:
+Idempotency-Key: unique-value
 
-Hugo Salcedo
-Ingeniero de Software
-Desarrollo Backend Java / Spring Boot
-Full Stack Web Developer
+🖥�?Flujo sugerido de prueba
+
+Una vez levantado el proyecto con Docker:
+1.) Iniciar sesión en el frontend
+2.) Crear un producto
+3.) Crear inventario para ese producto
+4.) Consultar el detalle del producto
+5.) Realizar una compra
+6.) Validar que el stock disminuye correctamente
+
+🎨 Mejoras aplicadas en frontend
+
+1.) Interfaz construida con Tailwind CSS
+2.) Manejo de estado con Pinia
+3.) Alertas reutilizables
+4.) Loaders reutilizables
+5.) Estados vacíos amigables
+6.) Validaciones visuales por campo
+7.) Botones con estado de carga y deshabilitado
+8.) Navegación protegida por autenticación
+
+👨‍�?Autor
+Desarrollado por Hugo Salcedo
