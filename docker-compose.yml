@@ -63,6 +63,18 @@ services:
     networks:
       - microservices-net
 
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - products-service
+      - inventory-service
+    networks:
+      - microservices-net
+
 volumes:
   products_data:
   inventory_data:
